@@ -1,0 +1,213 @@
+{\rtf1\ansi\ansicpg1252\deff0\deflang1033{\fonttbl{\f0\fnil\fcharset0 Courier New;}}
+\viewkind4\uc1\pard\f0\fs18 # (c) Silvaco Inc., 2015\par
+go atlas\par
+\par
+Title Quantum Well Infrared Photodetector: Spectral and Angular Response\par
+# \par
+# This example simulates a QWIP with an active region consisting of \par
+# 3 GaAs wells (4nm thick) separated by 50 nm thick Al(0.25)GaAs(0.75) \par
+# barriers.  The active region is sandwiched between 100 nm thick GaAs \par
+# contact layers.\par
+#\par
+# Both the contacts and the wells are n-type with a uniform doping of \par
+# 10^18 while the barriers are treated as intrinsic with a very small doping  \par
+# of 10^11 cc. \par
+# \par
+# The structural and electrical conditions are chosen to approximate the \par
+# conditions over the length of the active region in the experimental work\par
+# by Bethea et al. \par
+#\par
+# References:\par
+# 1. C G Bethea, B. F. Levine, V Shen, R R Abbott, S J Hseih,\par
+#    "10-pm GaAs / AlGaAs Multiquantum Well Scanned Array Infrared Imaging \par
+#    Camera"  IEEE Transactions on Electron Devices, vol 38, pg. 1118 (1991)\par
+#\par
+# 2. H. Schneider, H.C. Liu, "Quantum Well Infrared Photodetectors: \par
+#    Physics and Applications", Springer-Verlag, Berlin, (2007)\par
+#\par
+# SECTION 1: Mesh specification\par
+#\par
+mesh \par
+#\par
+x.mesh l=-0.1 s=0.01\par
+x.mesh l= 0.1 s=0.01\par
+#\par
+y.mesh l=-0.1   s=0.01\par
+y.mesh l= 0.0   s=0.0002\par
+y.mesh l= 0.05  s=0.0002\par
+y.mesh l= 0.053 s=0.0002\par
+y.mesh l= 0.103 s=0.0002\par
+y.mesh l= 0.106 s=0.0002\par
+y.mesh l= 0.156 s=0.0002\par
+y.mesh l= 0.159 s=0.0002\par
+y.mesh l= 0.209 s=0.0002\par
+y.mesh l= 0.309 s=0.01\par
+#\par
+# SECTION 2: Structure specification\par
+#\par
+region num=1 name=top  material=GaAs               y.max=0.0\par
+region num=2 name=barr material=AlGaAs x.comp=0.65 y.min=0.0    \par
+region num=3 name=well material=GaAs               y.min=0.050 abs \par
+region num=4 name=barr material=AlGaAs x.comp=0.65 y.min=0.053 \par
+region num=5 name=well material=GaAs               y.min=0.103 abs \par
+region num=6 name=barr material=AlGaAs x.comp=0.65 y.min=0.106 \par
+region num=7 name=well material=GaAs               y.min=0.156 abs \par
+region num=8 name=barr material=AlGaAs x.comp=0.65 y.min=0.159 \par
+region num=9 name=bottom material=GaAs             y.min=0.209\par
+#\par
+electrode num=1 name=emitter   top\par
+electrode num=2 name=collector bottom\par
+#\par
+# Due to the fact that only a small fraction of the active region of a real\par
+# QWIP is included in the simulation, the doping in the contacts is adjusted\par
+# to be equal to that in the wells. This minimizes the artifacts in the \par
+# potential over the active region due to its proximity to the contacts, and\par
+# better approximates the region deep inside the active layer in a much \par
+# larger QWIP consisting of 50 quantum wells\par
+#\par
+doping name=top    uniform  n.type conc=1e18\par
+doping name=bottom uniform  n.type conc=1e18\par
+doping name=well   uniform  n.type conc=1e18\par
+doping name=barr   uniform  n.type conc=1e11\par
+#\par
+# SECTION 3: Material specification\par
+#\par
+# The material affinities are set according to the 65 percent rule at 300 K\par
+# Imaginary part of the index of refraction is set to zero to remove \par
+# background absorption of the TE polarized light. This allows us to study\par
+# absorption purely of the TM mode, which by design of the structure, arises \par
+# only from the intersubband transitions.\par
+#\par
+material GaAs   affinity=4.07  imag.index=0 real.index=3.6\par
+material algaas affinity=3.57  imag.index=0 real.index=3.6\par
+#\par
+# The WELL.GAMMA0 sets broadening of the Lorentizians centered at the optical \par
+# transition frequencies. A broadening of 10 meV is a reasonable choice [2].\par
+# \par
+# WELL.TAUN sets the lifetime of a 3D carrier due to its capture by the wells\par
+# by emission of a phonon. This lifetime dominates at 300 K with a value of\par
+# roughly 1 ps [2].\par
+#\par
+material well.gamma0=0.01 well.taun=1e-12 \par
+#\par
+# SECTION 4: Model specification\par
+#\par
+models fermi zb.kp temperature=300 print\par
+#\par
+# WELL.CAPT parameter turns on the QWIP modeling in the Quantum and Luminous\par
+# modules. WELL.SELFCON couples the capture-escape and drift-diffusion models\par
+# to produce a self-consistent solution.\par
+# \par
+# We set WELL.NX=2 since we neglect variations in the lateral direction.\par
+# OFF.SPONT turns off the contributions of radiative capture to the total\par
+# capture rate of the carriers. This value will be confirmed by the simulation\par
+# to be at least 100 times smaller than WELL.TAUN, thus validating the \par
+# assumption to ignore the radiative capture in the actual equations solved.\par
+#\par
+# Similarly, WELL.WWSPONT is turned off since the 50 nm barriers do not\par
+# allow interwell radiative transitions.\par
+#\par
+models well.capt well.selfcon  well.nx=2 off.spont  ^well.wwspont \par
+#\par
+# Atlas calculates bound states in each well upto a maximum of \par
+# WELL.CNBS. The structure and material specifications should allow only 1\par
+# bound state to exist. We set WELL.CNBS=2 in order to allow Atlas to search\par
+# for upto two states, so that we can confirm in the output that only 1\par
+# state exists.\par
+# \par
+models name=well   nqwell well.cnbs  = 2\par
+#\par
+# Atlas computes the transitions from the well states to the travelling states\par
+# of the superlattice. Atlas computes all travelling states upto an energy of\par
+# 20 kT above the maximum of the conduction band edge. \par
+# SLATT.CNTS limits the number of travelling states above each well to which\par
+# the carrier is promoted in an intersubband transition.\par
+#\par
+models name=well   nslatt slatt.cnts = 5\par
+models name=barr   nslatt slatt.cnts = 5\par
+#\par
+# Since travelling states are computed by satisfying the relevant boundary\par
+# conditions at the endpoints of the active region, WELL.MARGIN must be set\par
+# equal to zero to prevent inclusion of the contacts into the Hamiltonian for\par
+# computing the superlattice states.\par
+#\par
+models name=top    well.margin=0.\par
+models name=bottom well.margin=0.\par
+#\par
+# SECTION 5: Method specification\par
+#\par
+method newton well.error=0.01\par
+#\par
+# SECTION 6: Optical source specification\par
+#\par
+# We use the transfer matrix method (TR.MATRIX) to fully consider multiple\par
+# reflections and coherent light propagation within the active layer. Since\par
+# the device is assumed uniform in the lateral direction, this 1D solution \par
+# to the Helmholtz equation can be applied at all beam angles. Since \par
+# TM absorption occurs only for non-normal incidence, we set the ANGLE \par
+# of the beam to 120, which is 30 degrees from the normal.\par
+#\par
+beam num=1 qwip tr.matrix  tblack=300 x.origin =0.1 y.origin=-0.5 \\\par
+wavelength=10.0 angle=120 verbose \par
+#\par
+# SECTION 7: Initial Solution\par
+#\par
+output con.band val.band recomb u.radiative opt.intens\par
+solve init\par
+save outf=quantumex21_0.str\par
+#\par
+# SECTION 8: Dark current calculation\par
+#\par
+#log outf=quantumex21_4.log\par
+#solve vstep=0.05 vfinal=1 name=collector\par
+#log off\par
+#tonyplot quantumex21_4.log -set quantumex21_0.set\par
+#\par
+# Here we reset the system for optical response calculation below\par
+#\par
+#solve init\par
+#\par
+# SECTION 9: Intersubband spectrum at Vcollector=0.15 V\par
+#\par
+#solve vcollector=0.1\par
+#solve vcollector=0.15\par
+#save outf=quantumex21_1.str spec.intersub=quantumex21_0.log\par
+#tonyplot quantumex21_0.log -set quantumex21_1.set\par
+#tonyplot quantumex21_0.log -set quantumex21_2.set\par
+#tonyplot quantumex21_0.log -set quantumex21_3.set\par
+\par
+#\par
+# SECTION 10: Spectral response\par
+#\par
+log outf=quantumex21_31.log\par
+solve B1=1000 beam=1 lambda=1 wstep=0.08 wfinal=6 \par
+save outf=quantumex21_31.str \par
+log off\par
+tonyplot quantumex21_31.log -set  quantumex21_4.set\par
+\par
+#\par
+# SECTION 11: Angular response\par
+#\par
+# Here we compute the QWIP response to changing the beam angle. The ANGLE\par
+# parameter below is added to the ANGLE parameter specified in the BEAM\par
+# statement above. Thus the angular response starts at 120-30=90 or a \par
+# normal incidence beam and continues upto an angle of 120+50-90=80 degrees\par
+# with respect to the normal\par
+#\par
+#log outf=quantumex21_1.log\par
+#solve b1=1000 beam=1 angle=-30.0 astep=1.0 afinal=50.0\par
+#save outf=quantumex21_2.str spec.intersub=quantumex21_2.log\par
+#log off\par
+#tonyplot quantumex21_1.log -set quantumex21_5.set\par
+\par
+\par
+\par
+quit\par
+\par
+\par
+\par
+\par
+\par
+\par
+}
+ 
